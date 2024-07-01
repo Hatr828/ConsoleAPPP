@@ -13,14 +13,9 @@ namespace ConsoleApp2
         {
             Process process = new Process();
             process.StartInfo.FileName= "notepad.exe";
-            process.Exited += Fineshed;
             process.Start();
             process.Close();
-        }
-
-        public static void Fineshed(object sender, EventArgs e)
-        {
-            Console.WriteLine("Process done");
+            Console.WriteLine(process.ExitCode);
         }
     }
 }
