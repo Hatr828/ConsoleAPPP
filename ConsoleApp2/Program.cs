@@ -13,24 +13,64 @@ namespace ConsoleApp2
     {
         static void Main(string[] args)
         {
-            Thread tr = new Thread(() => DwnloadTest());
-            tr.Start();
+            Cashier[] cashiers = new Cashier[5];
+            Thread[] threads = new Thread[5];
+
+            for (int i = 0; i < cashiers.Length; i++)
+            {
+                int cashierIndex = i;
+                //Не знаю почему, но у меня выводит ошибку если пробую запускать код, но если использовать переменную тогда все норм, хотя разницы не должно быть.
+
+                cashiers[i] = new Cashier();
+                threads[i] = new Thread(() => cashiers[i].Work());   //   threads[i] = new Thread(() => cashiers[cashierIndex].Work());  только так все работает
+
+                for (int j = 0; j < 5; j++)
+                {
+                    cashiers[i].costumers.Enqueue(new Customer());
+                }
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                threads[i].Start();
+            }
+
+            Console.ReadLine();
+        }     
+    }
+
+    public class Customer
+    {
+       public int Id;
+
+    }
+
+    public class Cashier
+    {
+       public Queue<Customer> costumers;
+       
+       private Random rd = new Random();
+
+
+        public Cashier()
+        {
+            costumers = new Queue<Customer>();
         }
 
-        private static void DwnloadTest()
+        public void Work()
         {
-            string url = "https://axiomabio.com/pdf/test.pdf";
-            string destinationPath = @"C:/";
-
-            using (WebClient webClient = new WebClient())
+            while (true)
             {
-                try
+                if (costumers == null || costumers.Count <= 0)
                 {
-                    webClient.DownloadFile(url, destinationPath);
+                    Console.WriteLine("Done: " + Thread.CurrentThread);
+                    break;
                 }
-                catch (Exception e)
+                else
                 {
-                    //...
+                    Console.WriteLine(" In progress left: " + costumers.Count);
+                    Thread.Sleep(rd.Next(1000, 3000));
+                    costumers.Dequeue();
                 }
             }
         }
