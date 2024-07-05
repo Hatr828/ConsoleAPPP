@@ -6,73 +6,76 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using System.IO;
+using System.Security.Cryptography;
+using System.Data.SqlTypes;
 
 namespace ConsoleApp2
 {
+
     internal class Program
     {
         static void Main(string[] args)
         {
-            Cashier[] cashiers = new Cashier[5];
-            Thread[] threads = new Thread[5];
+            BankAccount bankAccount = new BankAccount(1, 10000);
+            ATM atm = new ATM(bankAccount);
 
-            for (int i = 0; i < cashiers.Length; i++)
-            {
-                int cashierIndex = i;
-                //Не знаю почему, но у меня выводит ошибку если пробую запускать код, но если использовать переменную тогда все норм, хотя разницы не должно быть.
+            atm.DrawMoney(1000);
+            atm.DrawMoney(9000);
 
-                cashiers[i] = new Cashier();
-                threads[i] = new Thread(() => cashiers[i].Work());   //   threads[i] = new Thread(() => cashiers[cashierIndex].Work());  только так все работает
+            Thread.Sleep(500);
+            Console.WriteLine(bankAccount.money);
 
-                for (int j = 0; j < 5; j++)
-                {
-                    cashiers[i].costumers.Enqueue(new Customer());
-                }
-            }
-
-            for (int i = 0; i < 5; i++)
-            {
-                threads[i].Start();
-            }
 
             Console.ReadLine();
         }     
+        
     }
 
-    public class Customer
+    public class BankAccount
     {
-       public int Id;
+        private int id;
 
-    }
+        public ulong money;
 
-    public class Cashier
-    {
-       public Queue<Customer> costumers;
-       
-       private Random rd = new Random();
+        private int password;
 
-
-        public Cashier()
+        public BankAccount(int id, ulong money)
         {
-            costumers = new Queue<Customer>();
+            this.id = id;
+            this.money = money;
         }
 
-        public void Work()
+        public void DrawMoney(ulong amount)
         {
-            while (true)
+            lock(this)
             {
-                if (costumers == null || costumers.Count <= 0)
+                if (this.money >= amount)
                 {
-                    Console.WriteLine("Done: " + Thread.CurrentThread);
-                    break;
+                    this.money -= amount;
+
+                    Console.WriteLine("Money left: " + this.money);
                 }
                 else
                 {
-                    Console.WriteLine(" In progress left: " + costumers.Count);
-                    Thread.Sleep(rd.Next(1000, 3000));
-                    costumers.Dequeue();
+                    Console.WriteLine("Not enough money");
                 }
             }
+        }
+    }
+
+    public class ATM
+    {
+        private BankAccount account;
+
+        public ATM(BankAccount account)
+        {
+            this.account = account;
+        }
+
+        public void DrawMoney(ulong amount)
+        {
+            Task.Run(() => account.DrawMoney(amount));
         }
     }
 }
