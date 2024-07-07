@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,8 +6,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Threading;
 using System.IO;
-using System.Security.Cryptography;
-using System.Data.SqlTypes;
+using System.Collections.Generic;
+using System.Security.Policy;
+using System.Net.Http;
 
 namespace ConsoleApp2
 {
@@ -17,65 +17,57 @@ namespace ConsoleApp2
     {
         static void Main(string[] args)
         {
-            BankAccount bankAccount = new BankAccount(1, 10000);
-            ATM atm = new ATM(bankAccount);
+            using (CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                Task.Run(() =>
+                {
+                    Console.WriteLine("Press 'c' + 'Enter' ");
+                    if (Console.ReadKey().KeyChar == 'c')
+                    {
+                        cts.Cancel();
+                    }
+                });
 
-            atm.DrawMoney(1000);
-            atm.DrawMoney(9000);
-
-            Thread.Sleep(500);
-            Console.WriteLine(bankAccount.money);
-
+                DownloadHtml();
+            }
 
             Console.ReadLine();
-        }     
-        
-    }
-
-    public class BankAccount
-    {
-        private int id;
-
-        public ulong money;
-
-        private int password;
-
-        public BankAccount(int id, ulong money)
-        {
-            this.id = id;
-            this.money = money;
         }
 
-        public void DrawMoney(ulong amount)
+        public static void DownloadHtml()
         {
-            lock(this)
+            using (CancellationTokenSource cts = new CancellationTokenSource())
             {
-                if (this.money >= amount)
+                List<string> urls = new List<string>
                 {
-                    this.money -= amount;
+                    "https://chrome.com",
+                    "https://youtube.com",
+                    "https://X.com"
+                };
 
-                    Console.WriteLine("Money left: " + this.money);
-                }
-                else
+                HttpClient httpClient = new HttpClient();
+
+                List<Task<string>> downloadTasks = new List<Task<string>>();
+
+                foreach (var url in urls)
                 {
-                    Console.WriteLine("Not enough money");
+                    downloadTasks.Add(LoadUrlAsync(httpClient, url, cts.Token));
                 }
+
+                Task.WhenAll(downloadTasks);
             }
-        }
     }
 
-    public class ATM
-    {
-        private BankAccount account;
-
-        public ATM(BankAccount account)
+        static async Task<string> LoadUrlAsync(HttpClient httpClient, string url, CancellationToken cancellationToken)
         {
-            this.account = account;
+            HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            string content = await response.Content.ReadAsStringAsync();
+
+            return content;
         }
 
-        public void DrawMoney(ulong amount)
-        {
-            Task.Run(() => account.DrawMoney(amount));
-        }
     }
 }
