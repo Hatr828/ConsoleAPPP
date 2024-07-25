@@ -1,73 +1,70 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Net;
-using System.Threading;
-using System.IO;
-using System.Collections.Generic;
-using System.Security.Policy;
-using System.Net.Http;
 
 namespace ConsoleApp2
 {
-
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
-            {
-                Task.Run(() =>
-                {
-                    Console.WriteLine("Press 'c' + 'Enter' ");
-                    if (Console.ReadKey().KeyChar == 'c')
-                    {
-                        cts.Cancel();
-                    }
-                });
+            Random rd = new Random();
 
-                DownloadHtml();
+            int size = 10;
+
+            int[,] matrix1 = new int[size, size];
+            int[,] matrix2 = new int[size, size];
+
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    matrix1[i, j] = rd.Next(-100, 100);
+                    matrix2[i, j] = rd.Next(-100, 100);
+                }
             }
 
+            int[,] result = await MatrixMultiply(matrix1, matrix2);
+
+            PrintMatrix(result);
             Console.ReadLine();
         }
 
-        public static void DownloadHtml()
+        public async static Task<int[,]> MatrixMultiply(int[,] matrix1, int[,] matrix2)
         {
-            using (CancellationTokenSource cts = new CancellationTokenSource())
+            int size1 = matrix1.GetLength(0);
+            int size2 = matrix2.GetLength(1);
+            int size = matrix1.GetLength(1);
+
+            int[,] result = new int[size1, size2];
+
+            await Task.Run(() =>
             {
-                List<string> urls = new List<string>
+                for (int i = 0; i < size1; i++)
                 {
-                    "https://chrome.com",
-                    "https://youtube.com",
-                    "https://X.com"
-                };
-
-                HttpClient httpClient = new HttpClient();
-
-                List<Task<string>> downloadTasks = new List<Task<string>>();
-
-                foreach (var url in urls)
-                {
-                    downloadTasks.Add(LoadUrlAsync(httpClient, url, cts.Token));
+                    for (int j = 0; j < size2; j++)
+                    {
+                            result[i,j] = matrix1[i, k] * matrix2[k, j];
+                    }
                 }
+            });
 
-                Task.WhenAll(downloadTasks);
-            }
-    }
-
-        static async Task<string> LoadUrlAsync(HttpClient httpClient, string url, CancellationToken cancellationToken)
-        {
-            HttpResponseMessage response = await httpClient.GetAsync(url, cancellationToken);
-
-            response.EnsureSuccessStatusCode();
-
-            string content = await response.Content.ReadAsStringAsync();
-
-            return content;
+            return result;
         }
 
+        static void PrintMatrix(int[,] matrix)
+        {
+            int rows = matrix.GetLength(0);
+            int cols = matrix.GetLength(1);
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    Console.Write(matrix[i, j] + "\t");
+                }
+                Console.WriteLine();
+            }
+        }
     }
 }
