@@ -9,7 +9,6 @@ namespace ConsoleApp2
         static async Task Main(string[] args)
         {
             Random rd = new Random();
-
             int size = 10;
 
             int[,] matrix1 = new int[size, size];
@@ -40,13 +39,17 @@ namespace ConsoleApp2
 
             await Task.Run(() =>
             {
-                for (int i = 0; i < size1; i++)
+                Parallel.For(0, size1, i =>
                 {
                     for (int j = 0; j < size2; j++)
                     {
-                            result[i,j] = matrix1[i, k] * matrix2[k, j];
+                        result[i, j] = 0;
+                        for (int k = 0; k < size; k++)
+                        {
+                            result[i, j] += matrix1[i, k] * matrix2[k, j];
+                        }
                     }
-                }
+                });
             });
 
             return result;
