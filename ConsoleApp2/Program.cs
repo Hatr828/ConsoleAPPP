@@ -3,16 +3,29 @@ using System.IO;
 
 class Program
 {
-    static void Main()
+    static void Main(string[] args)
     {
-        string filePath = Path.Combine("MyFile.txt");
+        while (true)
+        {
+            string input = Console.ReadLine();
 
-        string text = "khjg";
-        File.WriteAllText(filePath, text);
+            try
+            {
+                double result = Test(input);
+                Console.WriteLine(result);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"error");
+            }
+        }
 
-        string readText = File.ReadAllText(filePath);
-        Console.WriteLine(readText);
+    }
 
-        Console.ReadLine();
+    static double Test(string expression)
+    {
+        var dataTable = new System.Data.DataTable();
+        var result = dataTable.Compute(expression, string.Empty);
+        return Convert.ToDouble(result);
     }
 }
