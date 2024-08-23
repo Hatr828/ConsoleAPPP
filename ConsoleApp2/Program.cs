@@ -9,9 +9,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
-        int port = 8888;
-        TcpListener listener = new TcpListener(ipAddress, port);
+        TcpListener listener = new TcpListener(IPAddress.Any, 8888);
+        double euro = 0.98;
+        double usd = 1;
 
         try
         {
@@ -21,33 +21,40 @@ class Program
             {
                 TcpClient client = listener.AcceptTcpClient();
                 NetworkStream stream = client.GetStream();
-                Console.WriteLine("Test");
+
+                using (StreamWriter writer = new StreamWriter("log.txt", true)) 
+                {
+                    writer.WriteLine("Start: " + client.Client.ToString() + " " + DateTime.Now.ToString());
+                    writer.Flush();  
+                }
+
 
                 byte[] buffer = new byte[256];
-                stream.Read(buffer,0,buffer.Length);
-                String request = Encoding.ASCII.GetString(buffer);
+                int bytes = stream.Read(buffer, 0, buffer.Length);
+                string request = Encoding.UTF8.GetString(buffer, 0, bytes).Trim();
 
-                if (request.Equals("date",StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine(request + " :value");
+
+                if (request.Equals("EURO/USD", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("date");
 
-                    string date = DateTime.Now.ToShortDateString();                                                     
-                    byte[] data = Encoding.ASCII.GetBytes(date);
+                    string euroUsd = usd.ToString();                                                     
+                    byte[] data = Encoding.ASCII.GetBytes(euroUsd);
 
                     stream.Write(data, 0, data.Length);
                 }
-                else if (request.Equals("time", StringComparison.OrdinalIgnoreCase))
+                else if (request.Equals("USD/EURO", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("time");
 
-                    string time = DateTime.Now.ToShortTimeString();
-                    byte[] data = Encoding.ASCII.GetBytes(time);
+                    string UsdEuro = Math.Round((usd / euro),2).ToString();
+                    byte[] data = Encoding.ASCII.GetBytes(UsdEuro);
 
                     stream.Write(data, 0, data.Length);
                 }
-                else
+                using (StreamWriter writer = new StreamWriter("log.txt", true))
                 {
-                    Console.WriteLine("test2");
+                    writer.WriteLine("END: " + client.Client.ToString() + " " + DateTime.Now.ToString());
+                    writer.Flush();
                 }
 
             }

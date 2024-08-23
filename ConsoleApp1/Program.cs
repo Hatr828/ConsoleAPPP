@@ -15,7 +15,7 @@ namespace ConsoleApp1
             TcpClient client = new TcpClient("127.0.0.1",8888);
             NetworkStream stream = client.GetStream();
 
-            byte[] request = Encoding.ASCII.GetBytes("date");
+            byte[] request = Encoding.ASCII.GetBytes("USD/EURO");
             stream.Write(request, 0, request.Length);
 
             byte[] data = new byte[256];
@@ -25,7 +25,10 @@ namespace ConsoleApp1
             bytes = stream.Read(data,0,data.Length);
             response.Append(Encoding.ASCII.GetString(data, 0 ,bytes));
 
+            Console.WriteLine(response);
+
             client.Close();
+            Console.ReadLine();
         }
     }
 }
