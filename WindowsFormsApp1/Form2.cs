@@ -1,85 +1,154 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows.Forms;
 
 public partial class Form2 : Form
 {
-    private Socket tcpClient;
-    private string userName;
+    static char[] board = new char[9] { '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+    static char currentPlayer = 'X';
+    static UdpClient udpServer;
+    static IPEndPoint player1EndPoint;
+    static IPEndPoint player2EndPoint;
 
-    public Form2()
+    static void Main(string[] args)
     {
-        InitializeComponent();
-    }
+        udpServer = new UdpClient(5000);
 
-    public Form2(Socket clientSocket, string username) : this()
-    {
-        tcpClient = clientSocket;
-        userName = username;
+        player1EndPoint = new IPEndPoint(IPAddress.Any, 0);
+        byte[] player1Data = udpServer.Receive(ref player1EndPoint);
+        SendMessage(player1EndPoint, "P1");
 
-        BeginReceiveMessages();
-    }
+        player2EndPoint = new IPEndPoint(IPAddress.Any, 0);
+        byte[] player2Data = udpServer.Receive(ref player2EndPoint);
+        SendMessage(player2EndPoint, "P2");
 
-
-    private void buttonSend_Click(object sender, EventArgs e)
-    {
-        string message = textBoxMessage.Text.Trim();
-
-        if (!string.IsNullOrEmpty(message))
+        bool gameRunning = true;
+        while (gameRunning)
         {
-            string fullMessage = $"{userName}: {message}";
-            byte[] buffer = Encoding.UTF8.GetBytes(fullMessage);
+            SendBoard(player1EndPoint);
+            SendBoard(player2EndPoint);
 
-            tcpClient.Send(buffer);
-
-            listViewChat.Items.Add(new ListViewItem(fullMessage));
-            textBoxMessage.Clear();
-        }
-    }
-
-    private void BeginReceiveMessages()
-    {
-        try
-        {
-            byte[] buffer = new byte[1024];
-            tcpClient.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnReceive), buffer);
-        }
-        catch (SocketException ex)
-        {
-            MessageBox.Show(ex.Message);
-        }
-    }
-
-    private void OnReceive(IAsyncResult ar)
-    {
-        try
-        {
-            byte[] buffer = (byte[])ar.AsyncState;
-            int bytesReceived = tcpClient.EndReceive(ar);
-
-            if (bytesReceived > 0)
+            if (CheckForWinner())
             {
-                string message = Encoding.UTF8.GetString(buffer, 0, bytesReceived);
-                ListView.Invoke((MethodInvoker)(() => listViewChat.Items.Add(new ListViewItem(message))));
+                SendMessage(player1EndPoint, "Победитель: " + currentPlayer);
+                SendMessage(player2EndPoint, "Победитель: " + currentPlayer);
+                gameRunning = false;
+            }
+            else if (IsBoardFull())
+            {
+                SendMessage(player1EndPoint, "Ничья");
+                SendMessage(player2EndPoint, "Ничья");
+                gameRunning = false;
+            }
+            else
+            {
+                IPEndPoint currentEndPoint = currentPlayer == 'X' ? player1EndPoint : player2EndPoint;
+                SendMessage(currentEndPoint, "Ваш ход");
 
-                BeginReceiveMessages();
+                int move = GetMove(currentEndPoint);
+                if (MakeMove(move))
+                {
+                    if (CheckForWinner())
+                    {
+                        SendBoard(player1EndPoint);
+                        SendBoard(player2EndPoint);
+                        SendMessage(player1EndPoint, "Победитель: " + currentPlayer);
+                        SendMessage(player2EndPoint, "Победитель: " + currentPlayer);
+                        gameRunning = false;
+                    }
+                    else if (IsBoardFull())
+                    {
+                        SendMessage(player1EndPoint, "Ничья");
+                        SendMessage(player2EndPoint, "Ничья");
+                        gameRunning = false;
+                    }
+
+                    SwitchPlayer();
+                }
             }
         }
-        catch (SocketException ex)
-        {
-            MessageBox.Show(ex.Message);
-        }
+
+        udpServer.Close();
     }
 
-    private void Form2_FormClosed(object sender, FormClosedEventArgs e)
+    static void SendMessage(IPEndPoint endPoint, string message)
     {
-        if (tcpClient != null)
+        byte[] data = Encoding.ASCII.GetBytes(message);
+        udpServer.Send(data, data.Length, endPoint);
+    }
+
+    static void SendBoard(IPEndPoint endPoint)
+    {
+        string boardState = GetBoardState();
+        SendMessage(endPoint, boardState);
+    }
+
+    static string GetBoardState()
+    {
+        return $" {board[0]} | {board[1]} | {board[2]} \n" +
+               "---+---+---\n" +
+               $" {board[3]} | {board[4]} | {board[5]} \n" +
+               "---+---+---\n" +
+               $" {board[6]} | {board[7]} | {board[8]} \n";
+    }
+
+    static int GetMove(IPEndPoint endPoint)
+    {
+        byte[] buffer = udpServer.Receive(ref endPoint);
+        string move = Encoding.ASCII.GetString(buffer).Trim();
+        return int.Parse(move) - 1;
+    }
+
+    static bool MakeMove(int position)
+    {
+        if (board[position] != 'X' && board[position] != 'O')
         {
-            tcpClient.Close();
+            board[position] = currentPlayer;
+            return true;
+        }
+        return false;
+    }
+
+    static void SwitchPlayer()
+    {
+        currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
+    }
+
+    static bool CheckForWinner()
+    {
+        int[,] winPositions = {
+            {0, 1, 2},
+            {3, 4, 5},
+            {6, 7, 8},
+            {0, 3, 6},
+            {1, 4, 7},
+            {2, 5, 8},
+            {0, 4, 8},
+            {2, 4, 6}
+        };
+
+        for (int i = 0; i < winPositions.GetLength(0); i++)
+        {
+            if (board[winPositions[i, 0]] == currentPlayer &&
+                board[winPositions[i, 1]] == currentPlayer &&
+                board[winPositions[i, 2]] == currentPlayer)
+            {
+                return true;
+            }
         }
 
-        Application.Exit(); 
+        return false;
     }
-        
+
+    static bool IsBoardFull()
+    {
+        foreach (char c in board)
+        {
+            if (c != 'X' && c != 'O')
+                return false;
+        }
+        return true;
+    }
 }
