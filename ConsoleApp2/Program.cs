@@ -2,117 +2,64 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
-class Program
+ class Program
 {
-    static List<ClientHandler> clients = new List<ClientHandler>();
-    static object locker = new object();
+    private static readonly HttpClient client = new HttpClient();
+    private static string apiKey;
 
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        TcpListener listener = new TcpListener(IPAddress.Any, 8888);
+        var config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .Build();
+        apiKey = config["TMDbApiKey"];
 
-        try
+        if (string.IsNullOrEmpty(apiKey))
         {
-            listener.Start();
-            Console.WriteLine("Сервер запущен...");
+            Console.WriteLine("error");
+            return;
+        }
 
-            while (true)
-            {
-                TcpClient client = listener.AcceptTcpClient();
-                ClientHandler clientHandler = new ClientHandler(client);
-                lock (locker)
-                {
-                    clients.Add(clientHandler);
-                }
+        Console.WriteLine("Film name");
+        string movieTitle = Console.ReadLine();
 
-                Thread clientThread = new Thread(clientHandler.HandleClient);
-                clientThread.Start();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-        finally
-        {
-            listener.Stop();
-        }
+        await GetMovieInfoAsync(movieTitle);
     }
 
-    public static void BroadcastMessage(string message, ClientHandler sender)
-    {
-        byte[] data = Encoding.UTF8.GetBytes(message);
-        lock (locker)
-        {
-            foreach (var client in clients)
-            {
-                if (client != sender)
-                {
-                    client.Stream.Write(data, 0, data.Length);
-                }
-            }
-        }
-    }
-
-    public static void RemoveClient(ClientHandler clientHandler)
-    {
-        lock (locker)
-        {
-            clients.Remove(clientHandler);
-        }
-    }
-}
-
-class ClientHandler
-{
-    public TcpClient Client { get; private set; }
-    public NetworkStream Stream { get; private set; }
-    private string userName;
-
-    public ClientHandler(TcpClient client)
-    {
-        Client = client;
-        Stream = client.GetStream();
-    }
-
-    public void HandleClient()
+    private static async Task GetMovieInfoAsync(string movieTitle)
     {
         try
         {
-            byte[] buffer = new byte[256];
-            int bytes = Stream.Read(buffer, 0, buffer.Length);
-            userName = Encoding.UTF8.GetString(buffer, 0, bytes).Trim();
+            string url = $"https://api.themoviedb.org/3/search/movie?api_key={apiKey}&query={Uri.EscapeDataString(movieTitle)}";
+            HttpResponseMessage response = await client.GetAsync(url);
 
-            Console.WriteLine($"{userName} вошел в чат.");
-            Program.BroadcastMessage($"{userName} присоединился к чату.", this);
+            response.EnsureSuccessStatusCode();
 
-            while (true)
+            string responseBody = await response.Content.ReadAsStringAsync();
+            JObject movieData = JObject.Parse(responseBody);
+
+            if (movieData["results"] != null && movieData["results"].HasValues)
             {
-                bytes = Stream.Read(buffer, 0, buffer.Length);
-                if (bytes == 0) break;
-
-                string message = Encoding.UTF8.GetString(buffer, 0, bytes).Trim();
-                Console.WriteLine($"{userName}: {message}");
-
-                Program.BroadcastMessage($"{userName}: {message}", this);
+                var firstMovie = movieData["results"][0];
+                Console.WriteLine($"Н: {firstMovie["title"]}");
+                Console.WriteLine($"О: {firstMovie["overview"]}");
+                Console.WriteLine($"Д: {firstMovie["release_date"]}");
+            }
+            else
+            {
+                Console.WriteLine("error");
             }
         }
-        catch (Exception ex)
+        catch (HttpRequestException e)
         {
-            Console.WriteLine($"Ошибка у пользователя {userName}: {ex.Message}");
-        }
-        finally
-        {
-            Console.WriteLine($"{userName} покинул чат.");
-            Program.BroadcastMessage($"{userName} вышел из чата.", this);
-            Program.RemoveClient(this);
-            Stream.Close();
-            Client.Close();
+            Console.WriteLine($"error");
         }
     }
 }
