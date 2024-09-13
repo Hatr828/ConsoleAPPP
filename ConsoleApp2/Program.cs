@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Mail;
 
@@ -6,26 +7,29 @@ class Program
 {
     static void Main(string[] args)
     {
+        string ftpUrl = "ftp://example.com/path/to/your/file.txt"; 
+        string localFilePath = @"C:\path\to\local\file.txt";       
+        string ftpUsername = "your_username";                      
+        string ftpPassword = "your_password";                     
+
         try
         {
-            SmtpClient smtpClient = new SmtpClient("test")
+            byte[] fileContents = File.ReadAllBytes(localFilePath);
+
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpUrl);
+            request.Method = WebRequestMethods.Ftp.UploadFile;
+
+            request.Credentials = new NetworkCredential(ftpUsername, ftpPassword);
+
+            using (Stream requestStream = request.GetRequestStream())
             {
-                Port = 5870, 
-                Credentials = new NetworkCredential("sadkjfhlfe@gmail.com", "sadkjfhlfe"),
-                EnableSsl = true 
-            };
+                requestStream.Write(fileContents, 0, fileContents.Length);
+            }
 
-            MailMessage mail = new MailMessage
+            using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
             {
-                From = new MailAddress("sadkjfhlfe@gmail.com"),
-                Subject = "test",
-                Body = "test",
-            };
-
-            mail.To.Add("test@gmail.com");
-            mail.To.Add("test@gmail.com");
-
-            smtpClient.Send(mail);
+                Console.WriteLine(response.StatusDescription);
+            }
         }
         catch (Exception ex)
         {
