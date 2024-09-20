@@ -7,33 +7,11 @@ class Program
 {
     static void Main(string[] args)
     {
-        string ftpUrl = "ftp://example.com/path/to/your/file.txt"; 
-        string localFilePath = @"C:\path\to\local\file.txt";       
-        string ftpUsername = "your_username";                      
-        string ftpPassword = "your_password";                     
+        var builder = WebApplication.CreateBuilder(args);
+        var app = builder.Build();
 
-        try
-        {
-            byte[] fileContents = File.ReadAllBytes(localFilePath);
+        app.MapHub<CurrencyHub>("/currencyHub");
 
-            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpUrl);
-            request.Method = WebRequestMethods.Ftp.UploadFile;
-
-            request.Credentials = new NetworkCredential(ftpUsername, ftpPassword);
-
-            using (Stream requestStream = request.GetRequestStream())
-            {
-                requestStream.Write(fileContents, 0, fileContents.Length);
-            }
-
-            using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
-            {
-                Console.WriteLine(response.StatusDescription);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+        app.Run();
     }
 }
