@@ -9,7 +9,7 @@ namespace ConsoleApp2
 {
     internal class DBControler
     {
-        static void ShowAllNames(SqlConnection connection)
+        public static void ShowAllNames(SqlConnection connection)
         {
             string query = "SELECT Name FROM VegetablesFruits";
             SqlCommand command = new SqlCommand(query, connection);
@@ -23,7 +23,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowAllCalors(SqlConnection connection)
+        public static void ShowAllCalors(SqlConnection connection)
         {
             string query = "SELECT DISTINCT Color FROM VegetablesFruits";
             SqlCommand command = new SqlCommand(query, connection);
@@ -37,7 +37,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowMinColories(SqlConnection connection)
+        public static void ShowMinColories(SqlConnection connection)
         {
             string query = "SELECT MIN(Calories) FROM VegetablesFruits";
             SqlCommand command = new SqlCommand(query, connection);
@@ -46,7 +46,7 @@ namespace ConsoleApp2
             Console.WriteLine($"min: {result}");
         }
 
-        static void ShowAvgCalories(SqlConnection connection)
+        public static void ShowAvgCalories(SqlConnection connection)
         {
             string query = "SELECT AVG(Calories) FROM VegetablesFruits";
             SqlCommand command = new SqlCommand(query, connection);
@@ -55,7 +55,7 @@ namespace ConsoleApp2
             Console.WriteLine($"avg: {result}");
         }
 
-        static void ShowVegetablesCount(SqlConnection connection)
+        public static void ShowVegetablesCount(SqlConnection connection)
         {
             string query = "SELECT COUNT(*) FROM VegetablesFruits WHERE Type = 'Овощ'";
             SqlCommand command = new SqlCommand(query, connection);
@@ -64,7 +64,7 @@ namespace ConsoleApp2
             Console.WriteLine($"num: {result}");
         }
 
-        static void ShowFruitsCount(SqlConnection connection)
+        public static void ShowFruitsCount(SqlConnection connection)
         {
             string query = "SELECT COUNT(*) FROM VegetablesFruits WHERE Type = 'Фрукт'";
             SqlCommand command = new SqlCommand(query, connection);
@@ -73,7 +73,7 @@ namespace ConsoleApp2
             Console.WriteLine($"num: {result}");
         }
 
-        static void ShowCountByColor(SqlConnection connection, string color)
+        public static void ShowCountByColor(SqlConnection connection, string color)
         {
             string query = "SELECT COUNT(*) FROM VegetablesFruits WHERE Color = @color";
             SqlCommand command = new SqlCommand(query, connection);
@@ -97,7 +97,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowBelowCalories(SqlConnection connection, int maxCalories)
+        public static void ShowBelowCalories(SqlConnection connection, int maxCalories)
         {
             string query = "SELECT * FROM VegetablesFruits WHERE Calories < @maxCalories";
             SqlCommand command = new SqlCommand(query, connection);
@@ -112,7 +112,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowAboveCalories(SqlConnection connection, int minCalories)
+        public static void ShowAboveCalories(SqlConnection connection, int minCalories)
         {
             string query = "SELECT * FROM VegetablesFruits WHERE Calories > @minCalories";
             SqlCommand command = new SqlCommand(query, connection);
@@ -127,7 +127,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowInCaloriesRange(SqlConnection connection, int minCalories, int maxCalories)
+        public static void ShowInCaloriesRange(SqlConnection connection, int minCalories, int maxCalories)
         {
             string query = "SELECT * FROM VegetablesFruits WHERE Calories BETWEEN @minCalories AND @maxCalories";
             SqlCommand command = new SqlCommand(query, connection);
@@ -143,7 +143,7 @@ namespace ConsoleApp2
             }
         }
 
-        static void ShowYellowOrRed(SqlConnection connection)
+        public static void ShowYellowOrRed(SqlConnection connection)
         {
             string query = "SELECT * FROM VegetablesFruits WHERE Color = 'Желтый' OR Color = 'Красный'";
             SqlCommand command = new SqlCommand(query, connection);
