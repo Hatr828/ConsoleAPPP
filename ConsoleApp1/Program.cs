@@ -1,47 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.SqlClient;
 
-namespace ConsoleApp1
+class Program
 {
-    internal class Program
+    private static string connectionString = "#########################";
+
+    static void Main()
     {
-        static void Main(string[] args)
+        try
         {
-            UdpClient client = new UdpClient();
-            IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
-
-            byte[] initialMessage = Encoding.ASCII.GetBytes("H");
-            client.Send(initialMessage, initialMessage.Length, serverEndPoint);
-
-            byte[] buffer = new byte[256];
-            while (true)
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                IPEndPoint serverResponseEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] receivedData = client.Receive(ref serverResponseEndPoint);
-                string message = Encoding.ASCII.GetString(receivedData);
-                Console.WriteLine(message);
+                connection.Open();
 
-                if (message.Contains("YOUR"))
-                {
-                    Console.Write("(1-9): ");
-                    string move = Console.ReadLine();
-                    byte[] moveData = Encoding.ASCII.GetBytes(move);
-                    client.Send(moveData, moveData.Length, serverEndPoint);
-                }
-                else if (message.Contains("W") || message.Contains("N"))
-                {
-                    break;
-                }
+
+                connection.Close();
+                Console.WriteLine("Connected");
             }
-
-            Console.WriteLine("LLL");
-            client.Close();
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"ex.Message");
         }
     }
+  
 }
