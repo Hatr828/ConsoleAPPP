@@ -2,46 +2,59 @@
 using System.Data;
 using System.Data.SqlClient;
 
-class Program
+namespace BankTransactionExample
 {
-    static void Main()
+    class Program
     {
-        string connectionString = "#######";
-
-        string objectName = "aaaa";
-        int objectQuantity = 10;
-        string objectStatus = "bbbb";
-
-        int newObjectId;
-
-        AddInventoryItem(connectionString, objectName, objectQuantity, objectStatus, out newObjectId);
-
-        Console.WriteLine($"ID: {newObjectId}");
-    }
-
-    static void AddInventoryItem(string connectionString, string objectName, int objectQuantity, string objectStatus, out int objectId)
-    {
-        using (SqlConnection connection = new SqlConnection(connectionString))
+        static void Main(string[] args)
         {
-            connection.Open();
+            string connectionString = "#####";
 
-            using (SqlCommand command = new SqlCommand("AddInventoryItem", connection))
+            string fromAccount = "1234567890"; 
+            string toAccount = "0987654321";  
+            decimal transferAmount = 100; 
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                command.CommandType = CommandType.StoredProcedure;
+                connection.Open();
 
-                command.Parameters.AddWithValue("@ObjectName", objectName);
-                command.Parameters.AddWithValue("@ObjectQuantity", objectQuantity);
-                command.Parameters.AddWithValue("@ObjectStatus", objectStatus);
+                SqlTransaction transaction = connection.BeginTransaction();
 
-                SqlParameter outputIdParam = new SqlParameter("@ObjectID", SqlDbType.Int)
+                try
                 {
-                    Direction = ParameterDirection.Output
-                };
-                command.Parameters.Add(outputIdParam);
+                    
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Accounts SET Balance = Balance - @Amount WHERE AccountNumber = @AccountNumber", connection, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@Amount", transferAmount);
+                        cmd.Parameters.AddWithValue("@AccountNumber", fromAccount);
+                        int rowsAffected = cmd.ExecuteNonQuery();
 
-                command.ExecuteNonQuery();
+                        if (rowsAffected == 0)
+                        {
+                            throw new Exception("error");
+                        }
+                    }
 
-                objectId = (int)outputIdParam.Value;
+                    using (SqlCommand cmd = new SqlCommand("UPDATE Accounts SET Balance = Balance + @Amount WHERE AccountNumber = @AccountNumber", connection, transaction))
+                    {
+                        cmd.Parameters.AddWithValue("@Amount", transferAmount);
+                        cmd.Parameters.AddWithValue("@AccountNumber", toAccount);
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        if (rowsAffected == 0)
+                        {
+                            throw new Exception("error");
+                        }
+                    }
+
+                    transaction.Commit();
+                    Console.WriteLine("S");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    transaction.Rollback();
+                }
             }
         }
     }
