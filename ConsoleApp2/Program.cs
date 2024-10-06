@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -8,54 +9,34 @@ namespace BankTransactionExample
     {
         static void Main(string[] args)
         {
-            string connectionString = "#####";
-
-            string fromAccount = "1234567890"; 
-            string toAccount = "0987654321";  
-            decimal transferAmount = 100; 
-
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-
-                SqlTransaction transaction = connection.BeginTransaction();
-
-                try
-                {
-                    
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Accounts SET Balance = Balance - @Amount WHERE AccountNumber = @AccountNumber", connection, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@Amount", transferAmount);
-                        cmd.Parameters.AddWithValue("@AccountNumber", fromAccount);
-                        int rowsAffected = cmd.ExecuteNonQuery();
-
-                        if (rowsAffected == 0)
-                        {
-                            throw new Exception("error");
-                        }
-                    }
-
-                    using (SqlCommand cmd = new SqlCommand("UPDATE Accounts SET Balance = Balance + @Amount WHERE AccountNumber = @AccountNumber", connection, transaction))
-                    {
-                        cmd.Parameters.AddWithValue("@Amount", transferAmount);
-                        cmd.Parameters.AddWithValue("@AccountNumber", toAccount);
-                        int rowsAffected = cmd.ExecuteNonQuery();
-
-                        if (rowsAffected == 0)
-                        {
-                            throw new Exception("error");
-                        }
-                    }
-
-                    transaction.Commit();
-                    Console.WriteLine("S");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    transaction.Rollback();
-                }
-            }
+          
+            
         }
     }
+
+    public class Student
+    {
+        public int StudentId { get; set; }
+        public string Name { get; set; }
+
+        public ICollection<StudentGroup> StudentGroups { get; set; }
+    }
+
+    public class Group
+    {
+        public int GroupId { get; set; }
+        public string GroupName { get; set; }
+
+        public ICollection<StudentGroup> StudentGroups { get; set; }
+    }
+
+    public class StudentGroup
+    {
+        public int StudentId { get; set; }
+        public Student Student { get; set; }
+
+        public int GroupId { get; set; }
+        public Group Group { get; set; }
+    }
+
 }
