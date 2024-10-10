@@ -1,31 +1,36 @@
 ﻿using BankTransactionExample;
+using Microsoft.EntityFrameworkCore;
+using Shop.Models;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using System.Runtime.Remoting.Contexts;
 
-public class DbContext : DbContext
+namespace Shop
 {
-    public DbSet<Student> Students { get; set; }
-    public DbSet<Group> Groups { get; set; }
-    public DbSet<StudentGroup> StudentGroups { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public class ShopContext : DbContext
     {
-        optionsBuilder.UseSqlServer("YourConnectionStringHere");
-    }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Order> Orders { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<StudentGroup>()
-            .HasKey(sg => new { sg.StudentId, sg.GroupId });
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(@"###");
+        }
 
-        modelBuilder.Entity<StudentGroup>()
-            .HasOne(sg => sg.Student)
-            .WithMany(s => s.StudentGroups)
-            .HasForeignKey(sg => sg.StudentId);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<OrderProduct>()
+                .HasKey(op => new { op.OrderId, op.ProductId });
 
-        modelBuilder.Entity<StudentGroup>()
-            .HasOne(sg => sg.Group)
-            .WithMany(g => g.StudentGroups)
-            .HasForeignKey(sg => sg.GroupId);
+            modelBuilder.Entity<OrderProduct>()
+                .HasOne(op => op.Order)
+                .WithMany(o => o.OrderProducts)
+                .HasForeignKey(op => op.OrderId);
+
+            modelBuilder.Entity<OrderProduct>()
+                .HasOne(op => op.Product)
+                .WithMany(p => p.OrderProducts)
+                .HasForeignKey(op => op.ProductId);
+        }
     }
 }
