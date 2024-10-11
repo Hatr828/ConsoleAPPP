@@ -11,123 +11,106 @@ namespace BankTransactionExample
         static void Main(string[] args)
         {
 
-            var serviceProvider = new ServiceCollection()
-      .AddDbContext<ShopContext>()
-      .AddScoped<OrderService>()
-      .BuildServiceProvider();
+            var authService = new AuthService();
+            bool exit = false;
 
-            var orderService = serviceProvider.GetService<OrderService>();
-
-            using (var context = serviceProvider.GetService<ShopContext>())
+            while (!exit)
             {
-                if (!context.Products.Any())
+                Console.WriteLine("1. E");
+                Console.WriteLine("2. R");
+                Console.WriteLine("3. X");
+                var choice = Console.ReadLine();
+
+                switch (choice)
                 {
-                    context.Products.AddRange(
-                        new Product { Name = "Laptop", Price = 1000 },
-                        new Product { Name = "Mouse", Price = 20 },
-                        new Product { Name = "Keyboard", Price = 50 }
-                    );
-                    context.SaveChanges();
+                    case "1":
+                        Console.Write("P: ");
+                        var loginUsername = Console.ReadLine();
+                        Console.Write("PP: ");
+                        var loginPassword = Console.ReadLine();
+
+                        if (authService.Login(loginUsername, loginPassword))
+                        {
+                            ShowMainMenu();
+                        }
+                        break;
+
+                    case "2":
+                        Console.Write("P: ");
+                        var registerUsername = Console.ReadLine();
+                        Console.Write("PP: ");
+                        var registerPassword = Console.ReadLine();
+
+                        authService.Register(registerUsername, registerPassword);
+                        break;
+
+                    case "3":
+                        exit = true;
+                        break;
+
+                    default:
+                        Console.WriteLine("error");
+                        break;
                 }
             }
 
-            orderService.AddOrder(new int[] { 1, 2 });
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
 
-            orderService.ViewOrders();
+        [Required]
+        public string Username { get; set; }
 
-            orderService.RemoveOrder(1);
-
-            orderService.ViewOrders();
-        }
+        [Required]
+        public string PasswordHash { get; set; }
     }
 
-    public class Product
+    public class AuthService
     {
-        public int ProductId { get; set; }
-        public string Name { get; set; }
-        public decimal Price { get; set; }
+        private readonly AppDbContext _dbContext;
 
-        public List<OrderProduct> OrderProducts { get; set; }
-    }
-
-    public class Order
-    {
-        public int OrderId { get; set; }
-        public DateTime OrderDate { get; set; }
-
-        public List<OrderProduct> OrderProducts { get; set; }
-    }
-
-    public class OrderProduct
-    {
-        public int OrderId { get; set; }
-        public Order Order { get; set; }
-
-        public int ProductId { get; set; }
-        public Product Product { get; set; }
-    }
-
-    public class OrderService
-    {
-        private readonly ShopContext _context;
-
-        public OrderService(ShopContext context)
+        public AuthService()
         {
-            _context = context;
+            _dbContext = new AppDbContext();
+            _dbContext.Database.EnsureCreated(); 
         }
 
-        public void AddOrder(int[] productIds)
+        public void Register(string username, string password)
         {
-            var order = new Order { OrderDate = DateTime.Now };
-            _context.Orders.Add(order);
-            _context.SaveChanges();
-
-            foreach (var productId in productIds)
+            if (_dbContext.Users.Any(u => u.Username == username))
             {
-                var orderProduct = new OrderProduct
-                {
-                    OrderId = order.OrderId,
-                    ProductId = productId
-                };
-                _context.Add(orderProduct);
+                return;
             }
-            _context.SaveChanges();
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            var user = new User
+            {
+                Username = username,
+                PasswordHash = passwordHash
+            };
+
+            _dbContext.Users.Add(user);
+            _dbContext.SaveChanges();
         }
 
-        public void RemoveOrder(int orderId)
+        public bool Login(string username, string password)
         {
-            var order = _context.Orders.Find(orderId);
-            if (order != null)
+            var user = _dbContext.Users.FirstOrDefault(u => u.Username == username);
+
+            if (user == null)
             {
-                _context.Orders.Remove(order);
-                _context.SaveChanges();
+                Console.WriteLine("User not find");
+                return false;
+            }
+
+            if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                return true;
             }
             else
             {
-                Console.WriteLine("error");
-            }
-        }
-
-        public void ViewOrders()
-        {
-            var orders = _context.Orders
-                                 .Select(o => new
-                                 {
-                                     o.OrderId,
-                                     o.OrderDate,
-                                     Products = o.OrderProducts.Select(op => op.Product.Name).ToList()
-                                 })
-                                 .ToList();
-
-            foreach (var order in orders)
-            {
-                Console.WriteLine($"Order ID: {order.OrderId}, Date: {order.OrderDate}");
-                Console.WriteLine("Products:");
-                foreach (var product in order.Products)
-                {
-                    Console.WriteLine($"- {product}");
-                }
-                Console.WriteLine();
+                return false;
             }
         }
     }

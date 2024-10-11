@@ -7,30 +7,13 @@ using System.Runtime.Remoting.Contexts;
 
 namespace Shop
 {
-    public class ShopContext : DbContext
+    public class DbContext : DbContext
     {
-        public DbSet<Product> Products { get; set; }
-        public DbSet<Order> Orders { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"###");
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<OrderProduct>()
-                .HasKey(op => new { op.OrderId, op.ProductId });
-
-            modelBuilder.Entity<OrderProduct>()
-                .HasOne(op => op.Order)
-                .WithMany(o => o.OrderProducts)
-                .HasForeignKey(op => op.OrderId);
-
-            modelBuilder.Entity<OrderProduct>()
-                .HasOne(op => op.Product)
-                .WithMany(p => p.OrderProducts)
-                .HasForeignKey(op => op.ProductId);
+            optionsBuilder.UseSqlite("###");
         }
     }
 }
