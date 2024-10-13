@@ -11,107 +11,47 @@ namespace BankTransactionExample
         static void Main(string[] args)
         {
 
-            var authService = new AuthService();
-            bool exit = false;
-
-            while (!exit)
+            using (var context = new AppDbContext())
             {
-                Console.WriteLine("1. E");
-                Console.WriteLine("2. R");
-                Console.WriteLine("3. X");
-                var choice = Console.ReadLine();
+                context.Database.EnsureCreated();
 
-                switch (choice)
+                var user1 = new User
                 {
-                    case "1":
-                        Console.Write("P: ");
-                        var loginUsername = Console.ReadLine();
-                        Console.Write("PP: ");
-                        var loginPassword = Console.ReadLine();
+                    Name = "John",
+                    Settings = new UserSettings { Theme = "Dark", ReceiveEmails = true }
+                };
+                var user2 = new User
+                {
+                    Name = "Alice",
+                    Settings = new UserSettings { Theme = "Light", ReceiveEmails = false }
+                };
+                var user3 = new User
+                {
+                    Name = "Bob",
+                    Settings = new UserSettings { Theme = "Dark", ReceiveEmails = true }
+                };
 
-                        if (authService.Login(loginUsername, loginPassword))
-                        {
-                            ShowMainMenu();
-                        }
-                        break;
-
-                    case "2":
-                        Console.Write("P: ");
-                        var registerUsername = Console.ReadLine();
-                        Console.Write("PP: ");
-                        var registerPassword = Console.ReadLine();
-
-                        authService.Register(registerUsername, registerPassword);
-                        break;
-
-                    case "3":
-                        exit = true;
-                        break;
-
-                    default:
-                        Console.WriteLine("error");
-                        break;
-                }
+                context.Users.AddRange(user1, user2, user3);
+                context.SaveChanges();
             }
-
-    public class User
-    {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        public string Username { get; set; }
-
-        [Required]
-        public string PasswordHash { get; set; }
-    }
-
-    public class AuthService
-    {
-        private readonly AppDbContext _dbContext;
-
-        public AuthService()
-        {
-            _dbContext = new AppDbContext();
-            _dbContext.Database.EnsureCreated(); 
         }
 
-        public void Register(string username, string password)
+        public class User
         {
-            if (_dbContext.Users.Any(u => u.Username == username))
-            {
-                return;
-            }
+            public int Id { get; set; }
+            public string Name { get; set; }
 
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
-            var user = new User
-            {
-                Username = username,
-                PasswordHash = passwordHash
-            };
-
-            _dbContext.Users.Add(user);
-            _dbContext.SaveChanges();
+            public UserSettings Settings { get; set; }
         }
 
-        public bool Login(string username, string password)
+        public class UserSettings
         {
-            var user = _dbContext.Users.FirstOrDefault(u => u.Username == username);
+            public int Id { get; set; }
 
-            if (user == null)
-            {
-                Console.WriteLine("User not find");
-                return false;
-            }
+            public string Theme { get; set; }
+            public bool ReceiveEmails { get; set; }
 
-            if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            public int UserId { get; set; }
+            public User User { get; set; }
         }
     }
-}
