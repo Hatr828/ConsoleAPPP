@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace BankTransactionExample
 {
@@ -11,47 +12,71 @@ namespace BankTransactionExample
         static void Main(string[] args)
         {
 
-            using (var context = new AppDbContext())
+            static void Main()
             {
-                context.Database.EnsureCreated();
+                UserManagement userManager = new UserManagement();
 
-                var user1 = new User
-                {
-                    Name = "John",
-                    Settings = new UserSettings { Theme = "Dark", ReceiveEmails = true }
-                };
-                var user2 = new User
-                {
-                    Name = "Alice",
-                    Settings = new UserSettings { Theme = "Light", ReceiveEmails = false }
-                };
-                var user3 = new User
-                {
-                    Name = "Bob",
-                    Settings = new UserSettings { Theme = "Dark", ReceiveEmails = true }
-                };
+   
+                userManager.AddUser(new User(1, "11") { Settings = new UserSettings { Theme = "Dark", NotificationsEnabled = true } });
+                userManager.AddUser(new User(2, "22") { Settings = new UserSettings { Theme = "Light", NotificationsEnabled = false } });
+                userManager.AddUser(new User(3, "33") { Settings = new UserSettings { Theme = "Dark", NotificationsEnabled = true } });
 
-                context.Users.AddRange(user1, user2, user3);
-                context.SaveChanges();
+                var user = userManager.GetUserById(2);
+                if (user != null)
+                {
+                    Console.WriteLine($"{user.Name}  {user.Settings.Theme}  {user.Settings.NotificationsEnabled}");
+                }
+
+                userManager.DeleteUserById(3);
+
+                var deletedUser = userManager.GetUserById(3);
+                if (deletedUser == null)
+                {
+                    Console.WriteLine("S");
+                }
             }
+        }
         }
 
         public class User
         {
             public int Id { get; set; }
             public string Name { get; set; }
-
             public UserSettings Settings { get; set; }
+
+            public User(int id, string name)
+            {
+                Id = id;
+                Name = name;
+                Settings = new UserSettings { UserId = id };
+            }
         }
 
         public class UserSettings
         {
-            public int Id { get; set; }
-
-            public string Theme { get; set; }
-            public bool ReceiveEmails { get; set; }
-
             public int UserId { get; set; }
-            public User User { get; set; }
+            public string Theme { get; set; }
+            public bool NotificationsEnabled { get; set; }
         }
+
+        public class UserManagement
+        {
+            private List<User> users = new List<User>();
+
+            public void AddUser(User user)
+            {
+                users.Add(user);
+            }
+
+            public User GetUserById(int id)
+            {
+                return users.FirstOrDefault(u => u.Id == id);
+            }
+
+            public void DeleteUserById(int id)
+            {
+                users.RemoveAll(u => u.Id == id);
+            }
+        }
+
     }
