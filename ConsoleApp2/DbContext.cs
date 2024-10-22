@@ -1,24 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BankTransactionExample;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using System.Runtime.Remoting.Contexts;
 
-public class DbContext : DbContext
+public class AppDbContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<UserSettings> UserSettings { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite("###");
-    }
+    public DbSet<Book> Books { get; set; }
+    public DbSet<Author> Authors { get; set; }
+    public DbSet<Genre> Genres { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Settings)
-            .WithOne(s => s.User)
-            .HasForeignKey<UserSettings>(s => s.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<Book>()
+            .HasOne(b => b.Author)
+            .WithMany(a => a.Books)
+            .HasForeignKey(b => b.AuthorId);
+
+        modelBuilder.Entity<Book>()
+            .HasOne(b => b.Genre)
+            .WithMany(g => g.Books)
+            .HasForeignKey(b => b.GenreId);
     }
 }
